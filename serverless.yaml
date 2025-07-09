@@ -1,0 +1,66 @@
+service: library-management-api
+
+frameworkVersion: '^4.14.4'
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  region: us-east-1
+  stage: dev  # Add this line
+  environment:
+    SERVICE_NAME: ${self:service}
+    STAGE: ${self:provider.stage}
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - dynamodb:Query
+            - dynamodb:Scan
+            - dynamodb:GetItem
+            - dynamodb:PutItem
+            - dynamodb:DeleteItem
+          Resource: !GetAtt LibraryTable.Arn
+
+functions:
+  getItems:
+    handler: hello-world/getItems.handler
+    events:
+      - httpApi:
+          path: /items
+          method: GET
+
+  getItem:
+    handler: hello-world/getItem.handler
+    events:
+      - httpApi:
+          path: /items/{id}
+          method: GET
+
+  putItem:
+    handler: hello-world/putItem.handler
+    events:
+      - httpApi:
+          path: /items
+          method: PUT
+
+  deleteItem:
+    handler: hello-world/deleteItem.handler
+    events:
+      - httpApi:
+          path: /items/{id}
+          method: DELETE
+
+resources:
+  Resources:
+    LibraryTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:service}-${self:provider.stage}-items  # This will create a unique name
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+        BillingMode: PAY_PER_REQUEST
